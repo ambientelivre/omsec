@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/Users/marcellopontes/git/omsec/lib/mondrian-3.6.6.jar"/>
+	<classpathentry kind="lib" path="/Users/marcellopontes/git/omsec/lib/pentaho-platform-api-5.0.6.jar"/>
+	<classpathentry kind="lib" path="/Users/marcellopontes/git/omsec/lib/pentaho-platform-core-5.0.6.jar"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>
