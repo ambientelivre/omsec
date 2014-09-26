@@ -1,0 +1,4 @@
+  <bean id="Mondrian-UserRoleMapper" 
+        name="Oncase-Dynamic-UserRoleMapper"  
+        class="com.oncase.olap.mapper.DynamicUserRoleMapper" 
+        scope="singleton" />

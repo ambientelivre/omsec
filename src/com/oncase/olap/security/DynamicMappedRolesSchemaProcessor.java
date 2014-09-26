@@ -2,10 +2,10 @@ package com.oncase.olap.security;
 
 import mondrian.olap.Util;
 
-public class MatrixDynamicSchemaProcessor
+public class DynamicMappedRolesSchemaProcessor
     implements mondrian.spi.DynamicSchemaProcessor {
 	
-	public MatrixDynamicSchemaProcessor(){
+	public DynamicMappedRolesSchemaProcessor(){
 		System.out.println("---------------------------------------------");
 		System.out.println("-- INICIANDO ");
 		System.out.println("---------------------------------------------");
@@ -136,6 +136,15 @@ public class MatrixDynamicSchemaProcessor
 				"            <DimensionGrant dimension=\"[Product]\" access=\"none\" />"+
 				"            <HierarchyGrant hierarchy=\"[Markets]\" access=\"custom\" >"+
 				"                <MemberGrant member=\"[Markets].[EMEA]\" access=\"all\" />"+
+				"            </HierarchyGrant>"+
+				"        </CubeGrant>"+
+				"    </SchemaGrant>"+
+				"</Role>"+
+				"<Role name=\"Authenticated\">"+
+				"    <SchemaGrant access=\"none\">"+
+				"        <CubeGrant cube=\"SteelWheelsSales\" access=\"all\">"+
+				"            <HierarchyGrant hierarchy=\"[Markets]\" access=\"custom\" >"+
+				"                <MemberGrant member=\"[Markets].[NA]\" access=\"all\" />"+
 				"            </HierarchyGrant>"+
 				"        </CubeGrant>"+
 				"    </SchemaGrant>"+
