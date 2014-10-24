@@ -132,7 +132,7 @@
       </Annotations>
     </Measure>
   </Cube>
-  <Role name="Administrator">
+  <Role name="Authenticated">
     <SchemaGrant access="none">
     </SchemaGrant>
   </Role>

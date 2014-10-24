@@ -1,162 +1,216 @@
 package com.oncase.olap.security;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+
+import pt.webdetails.di.baserver.utils.web.Response;
+import pt.webdetails.di.baserver.utils.web.HttpConnectionHelper;
 import mondrian.olap.Util;
 
-public class DynamicMappedRolesSchemaProcessor
-    implements mondrian.spi.DynamicSchemaProcessor {
-	
-	public DynamicMappedRolesSchemaProcessor(){
-		System.out.println("---------------------------------------------");
-		System.out.println("-- INICIANDO ");
-		System.out.println("---------------------------------------------");
+import org.apache.commons.vfs.FileSystemException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.pentaho.platform.api.engine.IPentahoSession;
+import org.pentaho.platform.engine.core.system.PentahoSessionHolder;
+import org.pentaho.platform.engine.core.system.PentahoSystem;
+
+import com.oncase.olap.security.di.XMLWorker;
+import com.oncase.olap.security.exception.DSPException;
+import com.oncase.olap.security.exception.PropertiesLoadException;
+import com.oncase.olap.security.exception.SchemaLoadException;
+
+public class DynamicMappedRolesSchemaProcessor implements
+		mondrian.spi.DynamicSchemaProcessor {
+
+	final String PROPERTIES = "cubeguard.properties";
+	final String PLUGIN_PATH = "system/cubeguard";
+
+	private Properties prop;
+	private boolean replceString;
+	private String stringToBeReplaced, rulesEndpointPath;
+
+	public DynamicMappedRolesSchemaProcessor() throws PropertiesLoadException {
+
+		String propPath = getSolutionRootPath() + "/" + PLUGIN_PATH + "/"
+				+ PROPERTIES;
+
+		try {
+			setProperties(propPath);
+		} catch (IOException e) {
+			throw new PropertiesLoadException("Error loading properties file");
+		}
+
+		replceString = "true".equals(prop.get("cubeguard.replaceString"));
+		stringToBeReplaced = (String) prop.get("cubeguard.replaceString");
+		rulesEndpointPath = (String) prop.get("cubeguard.rulesEndpointPath");
+
 	}
-	
+
 	@Override
-	public String processSchema(String schemaUrl,
-	        Util.PropertyList connectInfo) throws Exception {
-	
-		
-		String schema =  "<Schema name=\"SteelWheels\">"+
-				"	<Cube name=\"SteelWheelsSales\" cache=\"true\" enabled=\"true\">"+
-				"		<Table name=\"ORDERFACT\">"+
-				"		</Table>"+
-				"		<Dimension foreignKey=\"CUSTOMERNUMBER\" name=\"Markets\">"+
-				"			<Hierarchy hasAll=\"true\" allMemberName=\"All Markets\" primaryKey=\"CUSTOMERNUMBER\" primaryKeyTable=\"\">"+
-				"				<Table name=\"CUSTOMER_W_TER\">"+
-				"				</Table>"+
-				"        <Level name=\"Territory\" column=\"TERRITORY\" type=\"String\" uniqueMembers=\"true\" levelType=\"Regular\""+
-				"               hideMemberIf=\"Never\">"+
-				"          <!--Property name=\"CHART_SERIES_COLOR\" column=\"TERRITORY_COLOR\" type=\"String\">"+
-				"          </Property-->"+
-				"				</Level>"+
-				"        <Level name=\"Country\" column=\"COUNTRY\" levelType=\"Regular\""+
-				"               hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"Data.Role\">Geography</Annotation>"+
-				"            <Annotation name=\"Geo.Role\">country</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"        <Level name=\"State Province\" column=\"STATE\" type=\"String\" levelType=\"Regular\""+
-				"               hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"Data.Role\">Geography</Annotation>"+
-				"            <Annotation name=\"Geo.Role\">state</Annotation>"+
-				"            <Annotation name=\"Geo.RequiredParents\">country</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"        <Level name=\"City\" column=\"CITY\" type=\"String\" levelType=\"Regular\" hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"Data.Role\">Geography</Annotation>"+
-				"            <Annotation name=\"Geo.Role\">city</Annotation>"+
-				"            <Annotation name=\"Geo.RequiredParents\">country,state</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"			</Hierarchy>"+
-				"		</Dimension>"+
-				"		<Dimension foreignKey=\"CUSTOMERNUMBER\" name=\"Customers\">"+
-				"			<Hierarchy hasAll=\"true\" allMemberName=\"All Customers\" primaryKey=\"CUSTOMERNUMBER\">"+
-				"				<Table name=\"CUSTOMER_W_TER\">"+
-				"				</Table>"+
-				"        <Level name=\"Customer\" column=\"CUSTOMERNAME\" type=\"String\" uniqueMembers=\"true\" levelType=\"Regular\""+
-				"               hideMemberIf=\"Never\">"+
-				"                    <Property name=\"Customer Number\" column=\"CUSTOMERNUMBER\" type=\"Numeric\"/>"+
-				"                    <Property name=\"Contact First Name\" column=\"CONTACTFIRSTNAME\" type=\"String\"/>"+
-				"                    <Property name=\"Contact Last Name\" column=\"CONTACTLASTNAME\" type=\"String\"/>"+
-				"                    <Property name=\"Phone\" column=\"PHONE\" type=\"String\"/>"+
-				"                    <Property name=\"Address\" column=\"ADDRESSLINE1\" type=\"String\"/>"+
-				"                    <Property name=\"Credit Limit\" column=\"CREDITLIMIT\" type=\"Numeric\"/>"+
-				"				</Level>"+
-				"			</Hierarchy>"+
-				"		</Dimension>"+
-				"		<Dimension foreignKey=\"PRODUCTCODE\" name=\"Product\">"+
-				"      <Hierarchy name=\"\" hasAll=\"true\" allMemberName=\"All Products\" primaryKey=\"PRODUCTCODE\" primaryKeyTable=\"PRODUCTS\""+
-				"                 caption=\"\">"+
-				"				<Table name=\"PRODUCTS\">"+
-				"				</Table>"+
-				"        <Level name=\"Line\" table=\"PRODUCTS\" column=\"PRODUCTLINE\" type=\"String\" uniqueMembers=\"false\" levelType=\"Regular\""+
-				"               hideMemberIf=\"Never\">"+
-				"				</Level>"+
-				"        <Level name=\"Vendor\" table=\"PRODUCTS\" column=\"PRODUCTVENDOR\" type=\"String\" uniqueMembers=\"false\""+
-				"               levelType=\"Regular\" hideMemberIf=\"Never\">"+
-				"				</Level>"+
-				"        <Level name=\"Product\" table=\"PRODUCTS\" column=\"PRODUCTNAME\" type=\"String\" uniqueMembers=\"true\""+
-				"               levelType=\"Regular\" hideMemberIf=\"Never\">"+
-				"                    <Property name=\"Code\" column=\"PRODUCTCODE\" type=\"String\"/>"+
-				"                    <Property name=\"Vendor\" column=\"PRODUCTVENDOR\" type=\"String\"/>"+
-				"                    <Property name=\"Description\" column=\"PRODUCTDESCRIPTION\" type=\"String\"/>"+
-				"				</Level>"+
-				"			</Hierarchy>"+
-				"		</Dimension>"+
-				"		<Dimension type=\"TimeDimension\" foreignKey=\"TIME_ID\" name=\"Time\">"+
-				"			<Hierarchy hasAll=\"true\" allMemberName=\"All Years\" primaryKey=\"TIME_ID\">"+
-				"				<Table name=\"DIM_TIME\">"+
-				"				</Table>"+
-				"        <Level name=\"Years\" column=\"YEAR_ID\" type=\"Integer\" uniqueMembers=\"true\" levelType=\"TimeYears\""+
-				"               hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"AnalyzerDateFormat\">[yyyy]</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"        <Level name=\"Quarters\" column=\"QTR_NAME\" ordinalColumn=\"QTR_ID\" type=\"String\" uniqueMembers=\"false\""+
-				"               levelType=\"TimeQuarters\" hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"AnalyzerDateFormat\">[yyyy].['QTR'q]</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"        <Level name=\"Months\" column=\"MONTH_NAME\" ordinalColumn=\"MONTH_ID\" type=\"String\" uniqueMembers=\"false\""+
-				"               levelType=\"TimeMonths\" hideMemberIf=\"Never\">"+
-				"          <Annotations>"+
-				"            <Annotation name=\"AnalyzerDateFormat\">[yyyy].['QTR'q].[MMM]</Annotation>"+
-				"          </Annotations>"+
-				"				</Level>"+
-				"			</Hierarchy>"+
-				"		</Dimension>"+
-				"		<Dimension foreignKey=\"STATUS\" name=\"Order Status\">"+
-				"			<Hierarchy hasAll=\"true\" allMemberName=\"All Status Types\" primaryKey=\"STATUS\">"+
-				"				<Level name=\"Type\" column=\"STATUS\" type=\"String\" uniqueMembers=\"true\" levelType=\"Regular\" hideMemberIf=\"Never\">"+
-				"				</Level>"+
-				"			</Hierarchy>"+
-				"		</Dimension>"+
-				"		<Measure name=\"Quantity\" column=\"QUANTITYORDERED\" formatString=\"#,###\" aggregator=\"sum\">"+
-				"      <Annotations>"+
-				"        <Annotation name=\"AnalyzerBusinessGroup\">Measures</Annotation>"+
-				"      </Annotations>"+
-				"      <!--CalculatedMemberProperty name=\"CHART_SERIES_COLOR\" value=\"#0000cc\" /-->"+
-				"		</Measure>"+
-				"		<Measure name=\"Sales\" column=\"TOTALPRICE\" formatString=\"#,###\" aggregator=\"sum\">"+
-				"      <Annotations>"+
-				"        <Annotation name=\"AnalyzerBusinessGroup\">Measures</Annotation>"+
-				"      </Annotations>"+
-				"      <!--CalculatedMemberProperty name=\"CHART_SERIES_COLOR\" value=\"#0d8ecf\" /-->"+
-				"		</Measure>"+
-				"	</Cube>"+
-				"<Role name=\"Administrator\">"+
-				"    <SchemaGrant access=\"none\">"+
-				"        <CubeGrant cube=\"SteelWheelsSales\" access=\"all\">"+
-				"            <DimensionGrant dimension=\"[Product]\" access=\"none\" />"+
-				"            <HierarchyGrant hierarchy=\"[Markets]\" access=\"custom\" >"+
-				"                <MemberGrant member=\"[Markets].[EMEA]\" access=\"all\" />"+
-				"            </HierarchyGrant>"+
-				"        </CubeGrant>"+
-				"    </SchemaGrant>"+
-				"</Role>"+
-				"<Role name=\"Authenticated\">"+
-				"    <SchemaGrant access=\"none\">"+
-				"        <CubeGrant cube=\"SteelWheelsSales\" access=\"all\">"+
-				"            <HierarchyGrant hierarchy=\"[Markets]\" access=\"custom\" >"+
-				"                <MemberGrant member=\"[Markets].[NA]\" access=\"all\" />"+
-				"            </HierarchyGrant>"+
-				"        </CubeGrant>"+
-				"    </SchemaGrant>"+
-				"</Role>"+
-				"</Schema>";	
-			
-			System.out.println(schema);
-			return schema;
-			
-			
+	public String processSchema(String schemaUrl, Util.PropertyList connectInfo)
+			throws DSPException, ParserConfigurationException, ParseException,
+			TransformerException {
+
+		String userName = getUserName();
+		String schemaText = getXMLSchema(schemaUrl);
+
+		String dataSource = connectInfo.get("DataSource");
+
+		if (replceString)
+			schemaText.replace(stringToBeReplaced, userName);
+
+		schemaText = getModifiedSchema(schemaText, dataSource);
+		System.out.println(schemaText);
+		return schemaText;
+
 	}
-	
-	
+
+	private String getModifiedSchema(String schemaText, String dataSource)
+			throws ParserConfigurationException, ParseException,
+			TransformerException {
+
+		String rolesText = getXMLRoles(getEndpointResultSet(dataSource));
+
+		String modifiedSchema = rolesText.equals("") ? schemaText
+				: replaceSchemaRoles(schemaText, rolesText);
+
+		return modifiedSchema;
+
+	}
+
+	private String getXMLRoles(String endpointResultSet)
+			throws ParserConfigurationException, ParseException,
+			TransformerException {
+		XMLWorker xml = new XMLWorker(getResultSet(endpointResultSet));
+		return xml.getXML();
+
+	}
+
+	private ArrayList<Object[]> getResultSet(String endpointResultSet)
+			throws ParseException {
+
+		JSONParser parser = new JSONParser();
+		ArrayList<Object[]> output = new ArrayList<Object[]>();
+
+		Object obj = parser.parse(endpointResultSet);
+		JSONObject json = (JSONObject) obj;
+
+		JSONArray resultSet = (JSONArray) json.get("resultset");
+		Iterator<?> it = resultSet.iterator();
+		while (it.hasNext()) {
+			JSONArray innerArray = (JSONArray) it.next();
+			Object[] row = { (String) innerArray.get(XMLWorker.I_USER),
+					(String) innerArray.get(XMLWorker.I_SCHEMA),
+					(String) innerArray.get(XMLWorker.I_CUBE),
+					(String) innerArray.get(XMLWorker.I_HIERARCHY),
+					(String) innerArray.get(XMLWorker.I_MEMBER),
+					(int) (long) innerArray.get(XMLWorker.I_TYPE) };
+
+			output.add(row);
+
+		}
+
+		return output;
+	}
+
+	private String getSolutionRootPath() {
+		return PentahoSystem.getApplicationContext().getSolutionRootPath();
+	}
+
+	private void setProperties(String filePath) throws IOException {
+
+		prop = new Properties();
+		InputStream inputStream = new FileInputStream(filePath);
+
+		prop.load(inputStream);
+
+	}
+
+	private String replaceSchemaRoles(String schemaText, String rolesText) {
+
+		String from = schemaText.contains("</VirtualCube>") ? "</VirtualCube>"
+				: "</Cube>";
+
+		String to = schemaText.contains("<UserDefinedFunction ") ? "<UserDefinedFunction "
+				: schemaText.contains("<Parameter ") ? "<Parameter "
+						: "</Schema>";
+
+		Integer lenFrom = from.length();
+		Integer posFrom = schemaText.lastIndexOf(from);
+		Integer posTo = schemaText.indexOf(to);
+
+		String prepend = (posFrom > 0) ? schemaText.substring(0, posFrom
+				+ lenFrom) : "";
+
+		String append = (posTo > 0) ? schemaText.substring(posTo) : schemaText;
+
+		return (posFrom > 0 && posTo > 0) ? prepend + "\n\n" + rolesText
+				+ "\n\n" + append : schemaText;
+
+	}
+
+	private String getEndpointResultSet(String dataSource) {
+
+		String accessRules = "";
+		Map<String, String> queryParameters = new HashMap<String, String>();
+		queryParameters.put("kettleOutput", "Json");
+		queryParameters.put("dataSource", dataSource);
+
+		Response response = HttpConnectionHelper.invokeEndpoint("cubeguard",
+				rulesEndpointPath, "GET", queryParameters);
+
+		accessRules = response.getResult();
+
+		return accessRules;
+	}
+
+	private String getUserName() {
+		IPentahoSession session = PentahoSessionHolder.getSession();
+		return session.getName().toString();
+	}
+
+	private String getXMLSchema(String schemaUrl) throws SchemaLoadException {
+
+		BufferedReader reader = null;
+
+		try {
+
+			InputStream in = Util.readVirtualFile(schemaUrl);
+			reader = new BufferedReader(new InputStreamReader(in));
+			StringBuilder out = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				out.append(line);
+			}
+			reader.close();
+			return out.toString();
+
+		} catch (FileSystemException e) {
+			throw new SchemaLoadException("Error loading schema virtual file");
+		} catch (IOException e) {
+			throw new SchemaLoadException("Error reading schema file");
+		} finally {
+			try {
+				if (reader != null)
+					reader.close();
+			} catch (IOException e) {
+				throw new SchemaLoadException("Error closing schema file");
+			}
+		}
+
+	}
 
 }
