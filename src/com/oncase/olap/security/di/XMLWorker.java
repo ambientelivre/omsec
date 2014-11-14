@@ -27,6 +27,8 @@ public class XMLWorker {
 	public static final int DENIED_HIERARCHIES = 0;
 	public static final int ALLOWED_HIERARCHIES = 1;
 	public static final int DENIED_CUBES = 2;
+	public static final int SCHEMA_GRANT_ALL = 3;
+	
 
 	public static final int I_USER = 0;
 	public static final int I_SCHEMA = 1;
@@ -46,6 +48,7 @@ public class XMLWorker {
 
 	private Map<String, String> cubeGrants;
 	private Map<String, Element> cubeGrantsElm;
+	private boolean schemaGrantAll; 
 
 	// key: cube,hierarachy
 	private Map<MultiKey, String> hierarachyGrants;
@@ -69,10 +72,19 @@ public class XMLWorker {
 		documentBuilder = documentFactory.newDocumentBuilder();
 		initDocument();
 		createCollections();
-		appendCubeGrants();
-		appendHierarchyGrants();
-		appendMemberGrants();
+		if(!schemaGrantAll){
+			appendCubeGrants();
+			appendHierarchyGrants();
+			appendMemberGrants();
+			verifySchemaGrantHasChildren();
+		}
 		
+	}
+	
+	private void verifySchemaGrantHasChildren(){
+		if(!schemaGrant.hasChildNodes()){
+			schemaGrant.setAttribute("access", "none");
+		}
 	}
 
 	/**
@@ -98,20 +110,27 @@ public class XMLWorker {
 		cubeGrants = new HashMap<String, String>();
 		hierarachyGrants = new HashMap<MultiKey, String>();
 		memberGrants = new HashMap<MultiKey, String>();
+		
 		Set<String> deniedCubes = new HashSet<String>();
 		Iterator<Object[]> it = resultset.iterator();
 
 		while (it.hasNext()) {
 			Object[] next = it.next();
 			String cubeName = (String) next[I_CUBE];
+			
+			//schemaGrantAllCount
+			if((int) next[I_TYPE] == SCHEMA_GRANT_ALL)
+				schemaGrantAll=true;
 
 			// cubeGrants
 			boolean isCubeDenied = (int) next[I_TYPE] == DENIED_CUBES;
 			cubeGrants.put(cubeName, isCubeDenied ? "none" : "all");
+			
 			if (isCubeDenied)
 				deniedCubes.add(cubeName);
 
-			if ((int) next[I_TYPE] != DENIED_CUBES) {
+			if ((int) next[I_TYPE] == ALLOWED_HIERARCHIES || 
+					(int) next[I_TYPE] == DENIED_HIERARCHIES) {
 
 				// hierarchyGrants
 				final String member = (String) next[I_MEMBER];

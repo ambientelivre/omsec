@@ -40,7 +40,8 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 	private Properties prop;
 	private boolean replceString;
-	private String stringToBeReplaced, rulesEndpointPath;
+	private String stringToBeReplaced, defaultEndpointName,defaultEndpointType,
+					endpointType,endpointName;
 
 	public DynamicMappedRolesSchemaProcessor() throws PropertiesLoadException {
 
@@ -55,7 +56,8 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 		replceString = "true".equals(prop.get("cubeguard.replaceString"));
 		stringToBeReplaced = (String) prop.get("cubeguard.replaceString");
-		rulesEndpointPath = (String) prop.get("cubeguard.rulesEndpointPath");
+		defaultEndpointName = (String) prop.get("cubeguard.defaultEndpointName");
+		defaultEndpointType =  (String) prop.get("cubeguard.defaultEndpointType");
 
 	}
 
@@ -68,6 +70,14 @@ public class DynamicMappedRolesSchemaProcessor implements
 		String schemaText = getXMLSchema(schemaUrl);
 
 		String dataSource = connectInfo.get("DataSource");
+		endpointName = connectInfo.get("EndpointName");
+		endpointType = connectInfo.get("EndpointType");
+		
+		if(endpointName==null)
+			endpointName = defaultEndpointName;
+		
+		if(endpointType==null)
+			endpointType = defaultEndpointType;
 
 		if (replceString)
 			schemaText.replace(stringToBeReplaced, userName);
@@ -82,7 +92,9 @@ public class DynamicMappedRolesSchemaProcessor implements
 			throws ParserConfigurationException, ParseException,
 			TransformerException {
 
-		String rolesText = getXMLRoles(getEndpointResultSet(dataSource));
+		String rolesText = "resultset".equals(endpointType) 
+				? getXMLRoles(getEndpointResultSet(dataSource))
+						: getEndpointResultSet(dataSource);
 
 		String modifiedSchema = rolesText.equals("") ? schemaText
 				: replaceSchemaRoles(schemaText, rolesText);
@@ -166,11 +178,12 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 		String accessRules = "";
 		Map<String, String> queryParameters = new HashMap<String, String>();
-		queryParameters.put("kettleOutput", "Json");
+		final String kettleOutput = "resultset".equals(endpointType) ? "Json" : "SingleCell";
+		queryParameters.put("kettleOutput", kettleOutput);
 		queryParameters.put("dataSource", dataSource);
 
 		Response response = HttpConnectionHelper.invokeEndpoint("cubeguard",
-				rulesEndpointPath, "GET", queryParameters);
+				"/"+endpointName, "GET", queryParameters);
 
 		accessRules = response.getResult();
 
