@@ -203,6 +203,11 @@ public class XMLWorker {
 				Element hierarchyGrant = doc.createElement("HierarchyGrant");
 				hierarchyGrant.setAttribute("hierarchy", hierarchy);
 				hierarchyGrant.setAttribute("access", access);
+
+				//Partial rollupPolicity
+				hierarchyGrant.setAttribute(“rollupPolicy", “partial");
+
+
 				cubeGrant.appendChild(hierarchyGrant);
 				hierarachyGrantsElm.put(key, hierarchyGrant);
 
