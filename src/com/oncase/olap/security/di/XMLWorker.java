@@ -205,7 +205,7 @@ public class XMLWorker {
 				hierarchyGrant.setAttribute("access", access);
 
 				//Partial rollupPolicity
-				hierarchyGrant.setAttribute(“rollupPolicy", “partial");
+				hierarchyGrant.setAttribute("rollupPolicy", "partial");
 
 
 				cubeGrant.appendChild(hierarchyGrant);
