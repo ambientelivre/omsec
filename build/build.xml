@@ -6,7 +6,7 @@
    HTML emails with a dynamic ammout of images
   -->
 
-<project name="Oncase Mondrian Security" default="move2" basedir="..">
+<project name="Oncase Mondrian Security" default="jar" basedir="..">
 	<description>
 		Intercepts the schema for dynamically setting it up
     </description>
