@@ -55,7 +55,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 		}
 
 		replceString = "true".equals(prop.get("cubeguard.replaceString"));
-		stringToBeReplaced = (String) prop.get("cubeguard.replaceString");
+		stringToBeReplaced = (String) prop.get("cubeguard.stringToBeReplaced");
 		defaultEndpointName = (String) prop.get("cubeguard.defaultEndpointName");
 		defaultEndpointType =  (String) prop.get("cubeguard.defaultEndpointType");
 
