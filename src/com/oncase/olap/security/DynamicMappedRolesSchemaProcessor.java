@@ -40,6 +40,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 	private Properties prop;
 	private boolean replceString;
+	private boolean debug;
 	private String stringToBeReplaced, defaultEndpointName,defaultEndpointType,
 					endpointType,endpointName;
 
@@ -58,6 +59,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 		stringToBeReplaced = (String) prop.get("cubeguard.stringToBeReplaced");
 		defaultEndpointName = (String) prop.get("cubeguard.defaultEndpointName");
 		defaultEndpointType =  (String) prop.get("cubeguard.defaultEndpointType");
+		debug =  "true".equals(prop.get("cubeguard.debug"));
 
 	}
 
@@ -68,8 +70,15 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 		String userName = getUserName();
 		String schemaText = getXMLSchema(schemaUrl);
-
-		String dataSource = connectInfo.get("DataSource");
+		
+		String catalogName = connectInfo.get("Catalog");
+		
+		if(catalogName!=null){   
+			catalogName = catalogName.substring(catalogName.indexOf(":/")+2);
+		}else{
+			catalogName = "NOCATALOGPROVIDED";
+		}
+		
 		endpointName = connectInfo.get("EndpointName");
 		endpointType = connectInfo.get("EndpointType");
 		
@@ -80,21 +89,26 @@ public class DynamicMappedRolesSchemaProcessor implements
 			endpointType = defaultEndpointType;
 
 		if (replceString)
-			schemaText.replace(stringToBeReplaced, userName);
+			schemaText = schemaText.replace(stringToBeReplaced, userName);
 
-		schemaText = getModifiedSchema(schemaText, dataSource);
-		System.out.println(schemaText);
+		schemaText = getModifiedSchema(schemaText, catalogName);
+		printDebug("Schema text:", schemaText);
+		printDebug("Catalog name", catalogName);
+		printDebug("Connection info:", connectInfo);
+		printDebug("Replace String?", replceString);
+		printDebug("stringToBeReplaced:", stringToBeReplaced);
+		
 		return schemaText;
 
 	}
 
-	private String getModifiedSchema(String schemaText, String dataSource)
+	private String getModifiedSchema(String schemaText, String catalogName)
 			throws ParserConfigurationException, ParseException,
 			TransformerException {
 
 		String rolesText = "resultset".equals(endpointType) 
-				? getXMLRoles(getEndpointResultSet(dataSource))
-						: getEndpointResultSet(dataSource);
+				? getXMLRoles(getEndpointResultSet(catalogName))
+						: getEndpointResultSet(catalogName);
 
 		String modifiedSchema = rolesText.equals("") ? schemaText
 				: replaceSchemaRoles(schemaText, rolesText);
@@ -174,13 +188,13 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 	}
 
-	private String getEndpointResultSet(String dataSource) {
+	private String getEndpointResultSet(String catalogName) {
 
 		String accessRules = "";
 		Map<String, String> queryParameters = new HashMap<String, String>();
 		final String kettleOutput = "resultset".equals(endpointType) ? "Json" : "SingleCell";
 		queryParameters.put("kettleOutput", kettleOutput);
-		queryParameters.put("dataSource", dataSource);
+		queryParameters.put("paramcatalogName", catalogName);
 
 		Response response = HttpConnectionHelper.invokeEndpoint("cubeguard",
 				"/"+endpointName, "GET", queryParameters);
@@ -224,6 +238,16 @@ public class DynamicMappedRolesSchemaProcessor implements
 			}
 		}
 
+	}
+	
+	private void printDebug(String header, Object value){
+		if(debug){
+			System.out.println("- CUBEGUARD DEBUG ------------------------------");
+			System.out.println(header);
+			System.out.println(value);
+		}
+		
+		
 	}
 
 }
