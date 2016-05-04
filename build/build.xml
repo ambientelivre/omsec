@@ -6,7 +6,7 @@
    HTML emails with a dynamic ammout of images
   -->
 
-<project name="Oncase Mondrian Security" default="jar" basedir="..">
+<project name="Oncase Mondrian Security" default="move" basedir="..">
 	<description>
 		Intercepts the schema for dynamically setting it up
     </description>
@@ -37,7 +37,9 @@
 	<!-- compile the code -->
 	<target name="compile" depends="init" description="compile the source ">
 		<mkdir dir="${classes.dir}" />
-		<javac source="1.6" target="1.6" srcdir="${src.dir}" destdir="${classes.dir}" debuglevel="lines,vars,source" debug="true">
+		<javac source="1.7" compiler="javac1.7" executable="/Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home/bin/javac" 
+			fork="true" taskname="javac1.7" target="1.7" srcdir="${src.dir}" destdir="${classes.dir}" debuglevel="lines,vars,source" 
+			includeAntRuntime="no" deprecation="true" debug="true">
 			<classpath refid="compile.classpath" />
 		</javac>
 	</target>
@@ -63,10 +65,7 @@
 		<delete file="${test.file}" verbose="true" />
 		<copy file="${jar.file}" tofile="${test.file}" verbose="true" />
 	</target>
-	<target name="move2" depends="move">
-		<delete file="${test.file2}" verbose="true" />
-		<copy file="${jar.file}" tofile="${test.file2}" verbose="true" />
-	</target>
+
 
 
 </project>
