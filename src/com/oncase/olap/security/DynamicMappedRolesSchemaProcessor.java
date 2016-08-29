@@ -18,7 +18,6 @@ import pt.webdetails.di.baserver.utils.web.Response;
 import pt.webdetails.di.baserver.utils.web.HttpConnectionHelper;
 import mondrian.olap.Util;
 
-import org.apache.commons.vfs.FileSystemException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -225,10 +224,10 @@ public class DynamicMappedRolesSchemaProcessor implements
 			reader.close();
 			return out.toString();
 
-		} catch (FileSystemException e) {
-			throw new SchemaLoadException("Error loading schema virtual file");
 		} catch (IOException e) {
 			throw new SchemaLoadException("Error reading schema file");
+		} catch (Exception e) {
+			throw new SchemaLoadException("Error loading schema virtual file");
 		} finally {
 			try {
 				if (reader != null)
