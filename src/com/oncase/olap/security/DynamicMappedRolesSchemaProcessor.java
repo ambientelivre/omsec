@@ -41,7 +41,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 	private boolean replceString;
 	private boolean debug;
 	private String stringToBeReplaced, defaultEndpointName,defaultEndpointType,
-					endpointType,endpointName;
+					endpointType,endpointName, sessionVarsToReplace;
 
 	public DynamicMappedRolesSchemaProcessor() throws PropertiesLoadException {
 
@@ -59,6 +59,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 		defaultEndpointName = (String) prop.get("cubeguard.defaultEndpointName");
 		defaultEndpointType =  (String) prop.get("cubeguard.defaultEndpointType");
 		debug =  "true".equals(prop.get("cubeguard.debug"));
+		sessionVarsToReplace = (String) prop.get("cubeguard.sessionVarsToReplace");
 
 	}
 
@@ -80,6 +81,7 @@ public class DynamicMappedRolesSchemaProcessor implements
 		
 		endpointName = connectInfo.get("EndpointName");
 		endpointType = connectInfo.get("EndpointType");
+		HashMap<String, String> sessionVars = getResolvedSessionVars();
 		
 		if(endpointName==null)
 			endpointName = defaultEndpointName;
@@ -89,6 +91,14 @@ public class DynamicMappedRolesSchemaProcessor implements
 
 		if (replceString)
 			schemaText = schemaText.replace(stringToBeReplaced, userName);
+		
+		if(sessionVars != null && sessionVars.size() > 0){
+			for (Map.Entry<String, String> entry : sessionVars.entrySet()) {
+			    String key = entry.getKey();
+			    String value = entry.getValue();
+			    schemaText = schemaText.replace(key, value);
+			}
+		}
 
 		schemaText = getModifiedSchema(schemaText, catalogName);
 		printDebug("Schema text:", schemaText);
@@ -96,9 +106,40 @@ public class DynamicMappedRolesSchemaProcessor implements
 		printDebug("Connection info:", connectInfo);
 		printDebug("Replace String?", replceString);
 		printDebug("stringToBeReplaced:", stringToBeReplaced);
+		printDebug("Current session Vars to be replaced:", sessionVars.toString());
+		
 		
 		return schemaText;
 
+	}
+	
+	private HashMap<String, String> getResolvedSessionVars(){
+		
+		if(sessionVarsToReplace == null || sessionVarsToReplace.trim()==""){
+			printDebug("No session variables set", "Property cubeguard.sessionVarsToReplace is empty;");
+			return null;
+		}
+		
+		IPentahoSession session = PentahoSessionHolder.getSession();
+		
+		String[] rawVars = sessionVarsToReplace.split("\\s?,\\s?");
+		HashMap<String, String> sessionVars = new HashMap<String, String>();
+		
+		for(int i = 0 ; i < rawVars.length ; i++){
+			String currentSessionVar = rawVars[i];
+			if(currentSessionVar == null)
+				continue;
+			
+			currentSessionVar = currentSessionVar.trim();
+			
+			if(currentSessionVar.matches("^\\$\\{\\w+\\}$")){
+				String varName = currentSessionVar.substring(2, currentSessionVar.length()-1);
+				sessionVars.put(currentSessionVar, session.getAttribute(varName).toString());
+			}
+		}
+		
+		return sessionVars;
+		
 	}
 
 	private String getModifiedSchema(String schemaText, String catalogName)
