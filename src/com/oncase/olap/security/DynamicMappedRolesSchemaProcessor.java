@@ -134,7 +134,9 @@ public class DynamicMappedRolesSchemaProcessor implements
 			
 			if(currentSessionVar.matches("^\\$\\{\\w+\\}$")){
 				String varName = currentSessionVar.substring(2, currentSessionVar.length()-1);
-				sessionVars.put(currentSessionVar, session.getAttribute(varName).toString());
+				Object sessionValue = session.getAttribute(varName);
+				if(sessionValue == null) sessionValue = new String("");
+				sessionVars.put(currentSessionVar, sessionValue.toString());
 			}
 		}
 		
